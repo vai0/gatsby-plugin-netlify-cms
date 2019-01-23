@@ -157,7 +157,7 @@ exports.onCreateWebpackConfig = (
                   require.resolve("@babel/preset-env"),
                   {
                     shippedProposals: true,
-                    useBuiltIns: "entry", // <-- was "usage"
+                    useBuiltIns: "entry"
                   },
                 ],
             ],
@@ -172,21 +172,6 @@ exports.onCreateWebpackConfig = (
 
     // Prefer Gatsby ES6 entrypoint (module) over commonjs (main) entrypoint
     config.resolve.mainFields = ["browser", "module", "main"]
-
-    // defaultConfig.module.rules[0].use[0].options.
-
-    // config.module.rules[0].use[0].options.presets = [
-    //     require.resolve("@babel/preset-react"),
-    //     [
-    //       require.resolve("@babel/preset-env"),
-    //       {
-    //         shippedProposals: true,
-    //         useBuiltIns: "entry", // <-- was "usage"
-    //       },
-    //     ],
-    //   ];
-
-    console.log('\n\nconfig: ', JSON.stringify(config, null, 2));
 
     webpack(config).run()
   }
