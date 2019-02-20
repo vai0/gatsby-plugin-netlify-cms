@@ -43,7 +43,8 @@ exports.onCreateWebpackConfig = (
   }
 ) => {
 
-console.log('**** PATH ****', path.resolve(__dirname, "../../src"));
+    console.log('__dirname: ', __dirname);
+    console.log('**** path.resolve(__dirname, "../../src") ****', path.resolve(__dirname, "../../src"));
 
   if ([`develop`, `build-javascript`].includes(stage)) {
     const gatsbyConfig = getConfig()
