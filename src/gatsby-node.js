@@ -42,6 +42,9 @@ exports.onCreateWebpackConfig = (
     manualInit = false,
   }
 ) => {
+
+console.log('**** PATH ****', path.resolve(__dirname, "../../src"));
+
   if ([`develop`, `build-javascript`].includes(stage)) {
     const gatsbyConfig = getConfig()
     const { program } = store.getState()
