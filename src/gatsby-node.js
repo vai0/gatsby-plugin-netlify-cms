@@ -4,7 +4,8 @@ import webpack from "webpack"
 import HtmlWebpackPlugin from "html-webpack-plugin"
 import HtmlWebpackExcludeAssetsPlugin from "html-webpack-exclude-assets-plugin"
 import MiniCssExtractPlugin from "mini-css-extract-plugin"
-import FriendlyErrorsPlugin from "friendly-errors-webpack-plugin"
+// TODO: swap back when https://github.com/geowarin/friendly-errors-webpack-plugin/pull/86 lands
+import FriendlyErrorsPlugin from "@pieh/friendly-errors-webpack-plugin"
 
 /**
  * Deep mapping function for plain objects and arrays. Allows any value,
@@ -32,6 +33,20 @@ function deepMap(obj, fn) {
   return obj
 }
 
+exports.onCreateDevServer = ({ app, store }) => {
+  const { program } = store.getState()
+  app.get(`/admin`, function(req, res) {
+    res.sendFile(
+      path.join(program.directory, `public/admin/index.html`),
+      err => {
+        if (err) {
+          res.status(500).end(err.message)
+        }
+      }
+    )
+  })
+}
+
 exports.onCreateWebpackConfig = (
   { store, stage, getConfig, plugins, pathPrefix },
   {
@@ -40,6 +55,7 @@ exports.onCreateWebpackConfig = (
     enableIdentityWidget = true,
     htmlTitle = `Content Manager`,
     manualInit = false,
+    resolvePaths = [],
   }
 ) => {
   if ([`develop`, `build-javascript`].includes(stage)) {
@@ -52,15 +68,16 @@ exports.onCreateWebpackConfig = (
         cms: [
           manualInit && `${__dirname}/cms-manual-init.js`,
           `${__dirname}/cms.js`,
-          modulePath,
           enableIdentityWidget && `${__dirname}/cms-identity.js`,
-        ].filter(p => p),
+        ]
+          .concat(modulePath)
+          .filter(p => p),
       },
       output: {
         path: path.join(program.directory, `public`, publicPathClean),
       },
       resolve: {
-        modules: [path.resolve(__dirname, "../../src"), "node_modules"]
+        modules: [...resolvePaths, `node_modules`],
       },
       module: {
         /**
@@ -85,7 +102,7 @@ exports.onCreateWebpackConfig = (
          */
         ...gatsbyConfig.plugins.filter(
           plugin =>
-            ![`MiniCssExtractPlugin`].find(
+            ![`MiniCssExtractPlugin`, `GatsbyWebpackStatsExtractor`].find(
               pluginName =>
                 plugin.constructor && plugin.constructor.name === pluginName
             )
@@ -145,34 +162,37 @@ exports.onCreateWebpackConfig = (
        */
       mode: `none`,
       optimization: {},
+      devtool: stage === `develop` ? `cheap-module-source-map` : `source-map`,
     }
 
     config.module.rules.push({
-        test: /gatsby\/cache-dir.*\.js$/,
-        loader: require.resolve('babel-loader'),
-        options: {
-            presets: [
-                require.resolve("@babel/preset-react"),
-                [
-                  require.resolve("@babel/preset-env"),
-                  {
-                    shippedProposals: true,
-                    useBuiltIns: "entry"
-                  },
-                ],
-            ],
-            plugins: [
-                require.resolve("@babel/plugin-proposal-class-properties"),
-            ]
-        }
-    });
+      test: /gatsby\/cache-dir.*\.js$/,
+      loader: require.resolve(`babel-loader`),
+      options: {
+        presets: [
+          require.resolve(`@babel/preset-react`),
+          [
+            require.resolve(`@babel/preset-env`),
+            {
+              shippedProposals: true,
+              useBuiltIns: `entry`,
+            },
+          ],
+        ],
+        plugins: [require.resolve(`@babel/plugin-proposal-class-properties`)],
+      },
+    })
 
     // Transpile Gatsby module because Gatsby includes un-transpiled ES6 code.
-    config.module.rules.exclude = [/node_modules\/(?!(gatsby)\/)/];
+    config.module.rules.exclude = [/node_modules\/(?!(gatsby)\/)/]
 
     // Prefer Gatsby ES6 entrypoint (module) over commonjs (main) entrypoint
-    config.resolve.mainFields = ["browser", "module", "main"]
+    config.resolve.mainFields = [`browser`, `module`, `main`]
 
-    webpack(config).run()
+    if (stage === `develop`) {
+      webpack(config).watch({}, () => {})
+    } else {
+      webpack(config).run()
+    }
   }
 }

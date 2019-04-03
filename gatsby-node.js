@@ -16,7 +16,9 @@ var _htmlWebpackExcludeAssetsPlugin = _interopRequireDefault(require("html-webpa
 
 var _miniCssExtractPlugin = _interopRequireDefault(require("mini-css-extract-plugin"));
 
-var _friendlyErrorsWebpackPlugin = _interopRequireDefault(require("friendly-errors-webpack-plugin"));
+var _friendlyErrorsWebpackPlugin = _interopRequireDefault(require("@pieh/friendly-errors-webpack-plugin"));
+
+// TODO: swap back when https://github.com/geowarin/friendly-errors-webpack-plugin/pull/86 lands
 
 /**
  * Deep mapping function for plain objects and arrays. Allows any value,
@@ -52,32 +54,50 @@ function deepMap(obj, fn) {
   return obj;
 }
 
-exports.onCreateWebpackConfig = function (_ref, _ref2) {
-  var store = _ref.store,
-      stage = _ref.stage,
-      getConfig = _ref.getConfig,
-      plugins = _ref.plugins,
-      pathPrefix = _ref.pathPrefix;
-  var modulePath = _ref2.modulePath,
-      _ref2$publicPath = _ref2.publicPath,
-      publicPath = _ref2$publicPath === void 0 ? "admin" : _ref2$publicPath,
-      _ref2$enableIdentityW = _ref2.enableIdentityWidget,
-      enableIdentityWidget = _ref2$enableIdentityW === void 0 ? true : _ref2$enableIdentityW,
-      _ref2$htmlTitle = _ref2.htmlTitle,
-      htmlTitle = _ref2$htmlTitle === void 0 ? "Content Manager" : _ref2$htmlTitle,
-      _ref2$manualInit = _ref2.manualInit,
-      manualInit = _ref2$manualInit === void 0 ? false : _ref2$manualInit;
+exports.onCreateDevServer = function (_ref) {
+  var app = _ref.app,
+      store = _ref.store;
+
+  var _store$getState = store.getState(),
+      program = _store$getState.program;
+
+  app.get("/admin", function (req, res) {
+    res.sendFile(_path.default.join(program.directory, "public/admin/index.html"), function (err) {
+      if (err) {
+        res.status(500).end(err.message);
+      }
+    });
+  });
+};
+
+exports.onCreateWebpackConfig = function (_ref2, _ref3) {
+  var store = _ref2.store,
+      stage = _ref2.stage,
+      getConfig = _ref2.getConfig,
+      plugins = _ref2.plugins,
+      pathPrefix = _ref2.pathPrefix;
+  var modulePath = _ref3.modulePath,
+      _ref3$publicPath = _ref3.publicPath,
+      publicPath = _ref3$publicPath === void 0 ? "admin" : _ref3$publicPath,
+      _ref3$enableIdentityW = _ref3.enableIdentityWidget,
+      enableIdentityWidget = _ref3$enableIdentityW === void 0 ? true : _ref3$enableIdentityW,
+      _ref3$htmlTitle = _ref3.htmlTitle,
+      htmlTitle = _ref3$htmlTitle === void 0 ? "Content Manager" : _ref3$htmlTitle,
+      _ref3$manualInit = _ref3.manualInit,
+      manualInit = _ref3$manualInit === void 0 ? false : _ref3$manualInit,
+      _ref3$resolvePaths = _ref3.resolvePaths,
+      resolvePaths = _ref3$resolvePaths === void 0 ? [] : _ref3$resolvePaths;
 
   if (["develop", "build-javascript"].includes(stage)) {
     var gatsbyConfig = getConfig();
 
-    var _store$getState = store.getState(),
-        program = _store$getState.program;
+    var _store$getState2 = store.getState(),
+        program = _store$getState2.program;
 
     var publicPathClean = (0, _lodash.trim)(publicPath, "/");
     var config = (0, _extends2.default)({}, gatsbyConfig, {
       entry: {
-        cms: [manualInit && __dirname + "/cms-manual-init.js", __dirname + "/cms.js", modulePath, enableIdentityWidget && __dirname + "/cms-identity.js"].filter(function (p) {
+        cms: [manualInit && __dirname + "/cms-manual-init.js", __dirname + "/cms.js", enableIdentityWidget && __dirname + "/cms-identity.js"].concat(modulePath).filter(function (p) {
           return p;
         })
       },
@@ -85,7 +105,7 @@ exports.onCreateWebpackConfig = function (_ref, _ref2) {
         path: _path.default.join(program.directory, "public", publicPathClean)
       },
       resolve: {
-        modules: [_path.default.resolve(__dirname, "../../src"), "node_modules"]
+        modules: [].concat(resolvePaths, ["node_modules"])
       },
       module: {
         /**
@@ -104,7 +124,7 @@ exports.onCreateWebpackConfig = function (_ref, _ref2) {
         })
       },
       plugins: [].concat(gatsbyConfig.plugins.filter(function (plugin) {
-        return !["MiniCssExtractPlugin"].find(function (pluginName) {
+        return !["MiniCssExtractPlugin", "GatsbyWebpackStatsExtractor"].find(function (pluginName) {
           return plugin.constructor && plugin.constructor.name === pluginName;
         });
       }), [
@@ -153,11 +173,12 @@ exports.onCreateWebpackConfig = function (_ref, _ref2) {
        * config, they cause issues for our pre-bundled code.
        */
       mode: "none",
-      optimization: {}
+      optimization: {},
+      devtool: stage === "develop" ? "cheap-module-source-map" : "source-map"
     });
     config.module.rules.push({
       test: /gatsby\/cache-dir.*\.js$/,
-      loader: require.resolve('babel-loader'),
+      loader: require.resolve("babel-loader"),
       options: {
         presets: [require.resolve("@babel/preset-react"), [require.resolve("@babel/preset-env"), {
           shippedProposals: true,
@@ -170,6 +191,11 @@ exports.onCreateWebpackConfig = function (_ref, _ref2) {
     config.module.rules.exclude = [/node_modules\/(?!(gatsby)\/)/]; // Prefer Gatsby ES6 entrypoint (module) over commonjs (main) entrypoint
 
     config.resolve.mainFields = ["browser", "module", "main"];
-    (0, _webpack.default)(config).run();
+
+    if (stage === "develop") {
+      (0, _webpack.default)(config).watch({}, function () {});
+    } else {
+      (0, _webpack.default)(config).run();
+    }
   }
 };
