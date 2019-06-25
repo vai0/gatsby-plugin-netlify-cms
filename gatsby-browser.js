@@ -13,7 +13,7 @@ exports.onInitialClientRender = function (_, _ref) {
       publicPath = _ref$publicPath === void 0 ? "admin" : _ref$publicPath;
   var hash = (document.location.hash || "").replace(/^#\/?/, "");
 
-  if (enableIdentityWidget && (hash.match(routes) || hash.match(errorRoute) || hash.match(accessTokenRoute))) {
+  if (enableIdentityWidget && (routes.test(hash) || errorRoute.test(hash) || accessTokenRoute.test(hash))) {
     import("netlify-identity-widget").then(function (_ref2) {
       var netlifyIdentityWidget = _ref2.default;
       netlifyIdentityWidget.on("init", function (user) {
