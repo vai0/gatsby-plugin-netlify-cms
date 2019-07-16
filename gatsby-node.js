@@ -19,24 +19,16 @@ var _miniCssExtractPlugin = _interopRequireDefault(require("mini-css-extract-plu
 var _friendlyErrorsWebpackPlugin = _interopRequireDefault(require("@pieh/friendly-errors-webpack-plugin"));
 
 // TODO: swap back when https://github.com/geowarin/friendly-errors-webpack-plugin/pull/86 lands
-
-/**
- * Deep mapping function for plain objects and arrays. Allows any value,
- * including an object or array, to be transformed.
- */
+// Deep mapping function for plain objects and arrays. Allows any value,
+// including an object or array, to be transformed.
 function deepMap(obj, fn) {
-  /**
-   * If the transform function transforms the value, regardless of type,
-   * return the transformed value.
-   */
+  // If the transform function transforms the value, regardless of type, return
+  // the transformed value.
   var mapped = fn(obj);
 
   if (mapped !== obj) {
     return mapped;
-  }
-  /**
-   * Recursively deep map arrays and plain objects, otherwise return the value.
-   */
+  } // Recursively deep map arrays and plain objects, otherwise return the value.
 
 
   if (Array.isArray(obj)) {
@@ -54,11 +46,45 @@ function deepMap(obj, fn) {
   return obj;
 }
 
-exports.onCreateDevServer = function (_ref, _ref2) {
-  var app = _ref.app,
-      store = _ref.store;
-  var _ref2$publicPath = _ref2.publicPath,
-      publicPath = _ref2$publicPath === void 0 ? "admin" : _ref2$publicPath;
+function replaceRule(value) {
+  // If `value` does not have a `test` property, it isn't a rule object.
+  if (!value || !value.test) {
+    return value;
+  } // remove dependency rule
+
+
+  if (value.type === "javascript/auto" && value.use && value.use[0] && value.use[0].options && value.use[0].options.presets && /babel-preset-gatsby[/\\]dependencies\.js/.test(value.use[0].options.presets)) {
+    return null;
+  } // Manually swap `style-loader` for `MiniCssExtractPlugin.loader`.
+  // `style-loader` is only used in development, and doesn't allow us to pass
+  // the `styles` entry css path to Netlify CMS.
+
+
+  if (typeof value.loader === "string" && value.loader.includes("style-loader")) {
+    return (0, _extends2.default)({}, value, {
+      loader: _miniCssExtractPlugin.default.loader
+    });
+  }
+
+  return value;
+}
+
+exports.onPreInit = function (_ref) {
+  var reporter = _ref.reporter;
+
+  try {
+    require.resolve("netlify-cms");
+
+    reporter.warn("The netlify-cms package is deprecated, please install netlify-cms-app instead. You can do this by running \"npm install netlify-cms-app\"");
+  } catch (err) {// carry on
+  }
+};
+
+exports.onCreateDevServer = function (_ref2, _ref3) {
+  var app = _ref2.app,
+      store = _ref2.store;
+  var _ref3$publicPath = _ref3.publicPath,
+      publicPath = _ref3$publicPath === void 0 ? "admin" : _ref3$publicPath;
 
   var _store$getState = store.getState(),
       program = _store$getState.program;
@@ -73,23 +99,26 @@ exports.onCreateDevServer = function (_ref, _ref2) {
   });
 };
 
-exports.onCreateWebpackConfig = function (_ref3, _ref4) {
-  var store = _ref3.store,
-      stage = _ref3.stage,
-      getConfig = _ref3.getConfig,
-      plugins = _ref3.plugins,
-      pathPrefix = _ref3.pathPrefix;
-  var modulePath = _ref4.modulePath,
-      _ref4$publicPath = _ref4.publicPath,
-      publicPath = _ref4$publicPath === void 0 ? "admin" : _ref4$publicPath,
-      _ref4$enableIdentityW = _ref4.enableIdentityWidget,
-      enableIdentityWidget = _ref4$enableIdentityW === void 0 ? true : _ref4$enableIdentityW,
-      _ref4$htmlTitle = _ref4.htmlTitle,
-      htmlTitle = _ref4$htmlTitle === void 0 ? "Content Manager" : _ref4$htmlTitle,
-      _ref4$manualInit = _ref4.manualInit,
-      manualInit = _ref4$manualInit === void 0 ? false : _ref4$manualInit,
-      _ref4$resolvePaths = _ref4.resolvePaths,
-      resolvePaths = _ref4$resolvePaths === void 0 ? [] : _ref4$resolvePaths;
+exports.onCreateWebpackConfig = function (_ref4, _ref5) {
+  var store = _ref4.store,
+      stage = _ref4.stage,
+      getConfig = _ref4.getConfig,
+      plugins = _ref4.plugins,
+      pathPrefix = _ref4.pathPrefix,
+      loaders = _ref4.loaders;
+  var modulePath = _ref5.modulePath,
+      _ref5$publicPath = _ref5.publicPath,
+      publicPath = _ref5$publicPath === void 0 ? "admin" : _ref5$publicPath,
+      _ref5$enableIdentityW = _ref5.enableIdentityWidget,
+      enableIdentityWidget = _ref5$enableIdentityW === void 0 ? true : _ref5$enableIdentityW,
+      _ref5$htmlTitle = _ref5.htmlTitle,
+      htmlTitle = _ref5$htmlTitle === void 0 ? "Content Manager" : _ref5$htmlTitle,
+      _ref5$htmlFavicon = _ref5.htmlFavicon,
+      htmlFavicon = _ref5$htmlFavicon === void 0 ? "" : _ref5$htmlFavicon,
+      _ref5$manualInit = _ref5.manualInit,
+      manualInit = _ref5$manualInit === void 0 ? false : _ref5$manualInit,
+      _ref5$resolvePaths = _ref5.resolvePaths,
+      resolvePaths = _ref5$resolvePaths === void 0 ? [] : _ref5$resolvePaths;
 
   if (!["develop", "build-javascript"].includes(stage)) {
     return Promise.resolve();
@@ -111,29 +140,16 @@ exports.onCreateWebpackConfig = function (_ref3, _ref4) {
       path: _path.default.join(program.directory, "public", publicPathClean)
     },
     resolve: {
-      modules: resolvePaths.concat(["node_modules"])
+      modules: [].concat(resolvePaths, ["node_modules"])
     },
     module: {
-      /**
-       * Manually swap `style-loader` for `MiniCssExtractPlugin.loader`.
-       * `style-loader` is only used in development, and doesn't allow us to
-       * pass the `styles` entry css path to Netlify CMS.
-       */
-      rules: deepMap(gatsbyConfig.module.rules, function (value) {
-        if (typeof (0, _lodash.get)(value, "loader") === "string" && value.loader.includes("style-loader")) {
-          return (0, _extends2.default)({}, value, {
-            loader: _miniCssExtractPlugin.default.loader
-          });
-        }
-
-        return value;
-      })
+      rules: deepMap(gatsbyConfig.module.rules, replaceRule).filter(Boolean)
     },
-    plugins: gatsbyConfig.plugins.filter(function (plugin) {
+    plugins: [].concat(gatsbyConfig.plugins.filter(function (plugin) {
       return !["MiniCssExtractPlugin", "GatsbyWebpackStatsExtractor"].find(function (pluginName) {
         return plugin.constructor && plugin.constructor.name === pluginName;
       });
-    }).concat([
+    }), [
     /**
      * Provide a custom message for Netlify CMS compilation success.
      */
@@ -142,48 +158,32 @@ exports.onCreateWebpackConfig = function (_ref3, _ref4) {
       compilationSuccessInfo: {
         messages: ["Netlify CMS is running at " + (program.ssl ? "https" : "http") + "://" + program.host + ":" + program.port + "/" + publicPathClean + "/"]
       }
-    }),
-    /**
-     * Use a simple filename with no hash so we can access from source by
-     * path.
-     */
+    }), // Use a simple filename with no hash so we can access from source by
+    // path.
     new _miniCssExtractPlugin.default({
       filename: "[name].css"
-    }),
-    /**
-     * Auto generate CMS index.html page.
-     */
+    }), // Auto generate CMS index.html page.
     new _htmlWebpackPlugin.default({
       title: htmlTitle,
+      favicon: htmlFavicon,
       chunks: ["cms"],
       excludeAssets: [/cms.css/]
-    }),
-    /**
-     * Exclude CSS from index.html, as any imported styles are assumed to be
-     * targeting the editor preview pane. Uses `excludeAssets` option from
-     * `HtmlWebpackPlugin` config.
-     */
-    new _htmlWebpackExcludeAssetsPlugin.default(),
-    /**
-     * Pass in needed Gatsby config values.
-     */
+    }), // Exclude CSS from index.html, as any imported styles are assumed to be
+    // targeting the editor preview pane. Uses `excludeAssets` option from
+    // `HtmlWebpackPlugin` config.
+    new _htmlWebpackExcludeAssetsPlugin.default(), // Pass in needed Gatsby config values.
     new _webpack.default.DefinePlugin({
       __PATH__PREFIX__: pathPrefix,
       CMS_PUBLIC_PATH: JSON.stringify(publicPath)
     })]).filter(function (p) {
       return p;
     }),
-
-    /**
-     * Remove common chunks style optimizations from Gatsby's default
-     * config, they cause issues for our pre-bundled code.
-     */
+    // Remove common chunks style optimizations from Gatsby's default
+    // config, they cause issues for our pre-bundled code.
     mode: stage === "develop" ? "development" : "production",
     optimization: {
-      /**
-       * Without this, node can get out of memory errors
-       * when building for production.
-       */
+      // Without this, node can get out of memory errors when building for
+      // production.
       minimizer: stage === "develop" ? [] : gatsbyConfig.optimization.minimizer
     },
     // Disable sourcemaps in development to speed up HMR
