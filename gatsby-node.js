@@ -187,7 +187,7 @@ exports.onCreateWebpackConfig = function (_ref4, _ref5) {
       minimizer: stage === "develop" ? [] : gatsbyConfig.optimization.minimizer
     },
     // Disable sourcemaps in development to speed up HMR
-    devtool: stage === "develop" ? undefined : "source-map"
+    devtool: stage === "develop" ? undefined : "cheap-module-source-map"
   });
   config.module.rules.push({
     test: /gatsby\/cache-dir.*\.js$/,
