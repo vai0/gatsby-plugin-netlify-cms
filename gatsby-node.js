@@ -187,7 +187,7 @@ exports.onCreateWebpackConfig = function (_ref4, _ref5) {
       minimizer: stage === "develop" ? [] : gatsbyConfig.optimization.minimizer
     },
     // Disable sourcemaps in development to speed up HMR
-    devtool: stage === "develop" ? undefined : "source-map"
+    devtool: stage === "develop" ? false : "cheap-module-source-map"
   });
   config.module.rules.push({
     test: /gatsby\/cache-dir.*\.js$/,
@@ -201,7 +201,6 @@ exports.onCreateWebpackConfig = function (_ref4, _ref5) {
       plugins: [require.resolve("@babel/plugin-proposal-class-properties"), require.resolve("babel-plugin-remove-graphql-queries")]
     }
   });
-  config.module.rules.exclude = [/node_modules\/(?!(gatsby)\/)/];
   return new Promise(function (resolve, reject) {
     if (stage === "develop") {
       (0, _webpack.default)(config).watch({}, function () {});

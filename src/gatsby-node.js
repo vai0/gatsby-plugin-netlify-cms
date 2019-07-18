@@ -189,7 +189,7 @@ exports.onCreateWebpackConfig = (
     },
 
     // Disable sourcemaps in development to speed up HMR
-    devtool: stage === `develop` ? undefined : `source-map`,
+    devtool: stage === `develop` ? false : `cheap-module-source-map`,
   }
 
   config.module.rules.push({
@@ -213,8 +213,6 @@ exports.onCreateWebpackConfig = (
       ]
     }
   })
-
-  config.module.rules.exclude = [/node_modules\/(?!(gatsby)\/)/]
 
   return new Promise((resolve, reject) => {
     if (stage === `develop`) {
