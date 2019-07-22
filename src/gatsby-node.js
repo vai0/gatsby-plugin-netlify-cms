@@ -98,6 +98,7 @@ exports.onCreateWebpackConfig = (
     htmlTitle = `Content Manager`,
     htmlFavicon = ``,
     manualInit = false,
+    resolvePaths = [],
   }
 ) => {
   if (![`develop`, `build-javascript`].includes(stage)) {
@@ -119,6 +120,9 @@ exports.onCreateWebpackConfig = (
     },
     output: {
       path: path.join(program.directory, `public`, publicPathClean),
+    },
+    resolve: {
+      modules: [...resolvePaths, `node_modules`]
     },
     module: {
       rules: deepMap(gatsbyConfig.module.rules, replaceRule).filter(Boolean),
@@ -183,7 +187,7 @@ exports.onCreateWebpackConfig = (
       // production.
       minimizer: stage === `develop` ? [] : gatsbyConfig.optimization.minimizer,
     },
-    devtool: stage === `develop` ? `cheap-module-source-map` : `source-map`,
+    devtool: false,
   }
 
   return new Promise((resolve, reject) => {
