@@ -190,6 +190,30 @@ exports.onCreateWebpackConfig = (
     devtool: false,
   }
 
+  config.module.rules.push({
+    test: /gatsby\/cache-dir.*\.js$/,
+    loader: require.resolve(`babel-loader`),
+    options: {
+      presets: [
+        require.resolve(`@babel/preset-react`),
+        [
+          require.resolve(`@babel/preset-env`),
+          {
+            shippedProposals: true,
+            useBuiltIns: `entry`,
+            corejs: 2
+          }
+        ]
+      ],
+      plugins: [
+        require.resolve(`@babel/plugin-proposal-class-properties`),
+        require.resolve(`babel-plugin-remove-graphql-queries`)
+      ]
+    }
+  })
+
+  config.module.rules.exclude = [/node_modules\/(?!(gatsby)\/)/]
+
   return new Promise((resolve, reject) => {
     if (stage === `develop`) {
       webpack(config).watch({}, () => {})
