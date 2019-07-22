@@ -1,4 +1,4 @@
-import CMS from "netlify-cms"
+import CMS from "netlify-cms-app"
 
 /**
  * Load Netlify CMS automatically if `window.CMS_MANUAL_INIT` is set.

@@ -98,7 +98,7 @@ exports.onCreateWebpackConfig = (
     htmlTitle = `Content Manager`,
     htmlFavicon = ``,
     manualInit = false,
-    resolvePaths = []
+    resolvePaths = [],
   }
 ) => {
   if (![`develop`, `build-javascript`].includes(stage)) {
@@ -187,9 +187,7 @@ exports.onCreateWebpackConfig = (
       // production.
       minimizer: stage === `develop` ? [] : gatsbyConfig.optimization.minimizer,
     },
-
-    // Disable sourcemaps in development to speed up HMR
-    devtool: stage === `develop` ? undefined : `cheap-module-source-map`,
+    devtool: false,
   }
 
   config.module.rules.push({
