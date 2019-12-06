@@ -176,6 +176,7 @@ exports.onCreateWebpackConfig = (
       new webpack.DefinePlugin({
         __PATH__PREFIX__: pathPrefix,
         CMS_PUBLIC_PATH: JSON.stringify(publicPath),
+        PRERENDER_NAVBAR: JSON.stringify(false),
       }),
     ].filter(p => p),
 

@@ -5,22 +5,22 @@ var _interopRequireDefault = require("@babel/runtime/helpers/interopRequireDefau
 var _netlifyIdentityWidget = _interopRequireDefault(require("netlify-identity-widget"));
 
 /* global __PATH_PREFIX__ CMS_PUBLIC_PATH */
-window.netlifyIdentity = _netlifyIdentityWidget.default;
+window.netlifyIdentity = _netlifyIdentityWidget["default"];
 
 var addLoginListener = function addLoginListener() {
-  return _netlifyIdentityWidget.default.on("login", function () {
+  return _netlifyIdentityWidget["default"].on("login", function () {
     document.location.href = __PATH_PREFIX__ + "/" + CMS_PUBLIC_PATH + "/";
   });
 };
 
-_netlifyIdentityWidget.default.on("init", function (user) {
+_netlifyIdentityWidget["default"].on("init", function (user) {
   if (!user) {
     addLoginListener();
   } else {
-    _netlifyIdentityWidget.default.on("logout", function () {
+    _netlifyIdentityWidget["default"].on("logout", function () {
       addLoginListener();
     });
   }
 });
 
-_netlifyIdentityWidget.default.init();
+_netlifyIdentityWidget["default"].init();

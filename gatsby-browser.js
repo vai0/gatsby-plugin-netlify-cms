@@ -19,9 +19,9 @@ exports.onInitialClientRender = function (_, _ref) {
 
   if (enableIdentityWidget && (routes.test(hash) || errorRoute.test(hash) || accessTokenRoute.test(hash))) {
     Promise.resolve().then(function () {
-      return (0, _interopRequireWildcard2.default)(require("netlify-identity-widget"));
+      return (0, _interopRequireWildcard2["default"])(require("netlify-identity-widget"));
     }).then(function (_ref2) {
-      var netlifyIdentityWidget = _ref2.default;
+      var netlifyIdentityWidget = _ref2["default"];
       netlifyIdentityWidget.on("init", function (user) {
         if (!user) {
           netlifyIdentityWidget.on("login", function () {

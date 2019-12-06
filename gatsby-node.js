@@ -61,8 +61,8 @@ function replaceRule(value) {
 
 
   if (typeof value.loader === "string" && value.loader.includes("style-loader")) {
-    return (0, _extends2.default)({}, value, {
-      loader: _miniCssExtractPlugin.default.loader
+    return (0, _extends2["default"])({}, value, {
+      loader: _miniCssExtractPlugin["default"].loader
     });
   }
 
@@ -91,7 +91,7 @@ exports.onCreateDevServer = function (_ref2, _ref3) {
 
   var publicPathClean = (0, _lodash.trim)(publicPath, "/");
   app.get("/" + publicPathClean, function (req, res) {
-    res.sendFile(_path.default.join(program.directory, "public", publicPathClean, "index.html"), function (err) {
+    res.sendFile(_path["default"].join(program.directory, "public", publicPathClean, "index.html"), function (err) {
       if (err) {
         res.status(500).end(err.message);
       }
@@ -130,14 +130,14 @@ exports.onCreateWebpackConfig = function (_ref4, _ref5) {
       program = _store$getState2.program;
 
   var publicPathClean = (0, _lodash.trim)(publicPath, "/");
-  var config = (0, _extends2.default)({}, gatsbyConfig, {
+  var config = (0, _extends2["default"])({}, gatsbyConfig, {
     entry: {
       cms: [manualInit && __dirname + "/cms-manual-init.js", __dirname + "/cms.js", enableIdentityWidget && __dirname + "/cms-identity.js"].concat(modulePath).filter(function (p) {
         return p;
       })
     },
     output: {
-      path: _path.default.join(program.directory, "public", publicPathClean)
+      path: _path["default"].join(program.directory, "public", publicPathClean)
     },
     resolve: {
       modules: [].concat(resolvePaths, ["node_modules"])
@@ -153,17 +153,17 @@ exports.onCreateWebpackConfig = function (_ref4, _ref5) {
     /**
      * Provide a custom message for Netlify CMS compilation success.
      */
-    stage === "develop" && new _friendlyErrorsWebpackPlugin.default({
+    stage === "develop" && new _friendlyErrorsWebpackPlugin["default"]({
       clearConsole: false,
       compilationSuccessInfo: {
         messages: ["Netlify CMS is running at " + (program.ssl ? "https" : "http") + "://" + program.host + ":" + program.port + "/" + publicPathClean + "/"]
       }
     }), // Use a simple filename with no hash so we can access from source by
     // path.
-    new _miniCssExtractPlugin.default({
+    new _miniCssExtractPlugin["default"]({
       filename: "[name].css"
     }), // Auto generate CMS index.html page.
-    new _htmlWebpackPlugin.default({
+    new _htmlWebpackPlugin["default"]({
       title: htmlTitle,
       favicon: htmlFavicon,
       chunks: ["cms"],
@@ -171,10 +171,11 @@ exports.onCreateWebpackConfig = function (_ref4, _ref5) {
     }), // Exclude CSS from index.html, as any imported styles are assumed to be
     // targeting the editor preview pane. Uses `excludeAssets` option from
     // `HtmlWebpackPlugin` config.
-    new _htmlWebpackExcludeAssetsPlugin.default(), // Pass in needed Gatsby config values.
-    new _webpack.default.DefinePlugin({
+    new _htmlWebpackExcludeAssetsPlugin["default"](), // Pass in needed Gatsby config values.
+    new _webpack["default"].DefinePlugin({
       __PATH__PREFIX__: pathPrefix,
-      CMS_PUBLIC_PATH: JSON.stringify(publicPath)
+      CMS_PUBLIC_PATH: JSON.stringify(publicPath),
+      PRERENDER_NAVBAR: JSON.stringify(false)
     })]).filter(function (p) {
       return p;
     }),
@@ -203,11 +204,11 @@ exports.onCreateWebpackConfig = function (_ref4, _ref5) {
   config.module.rules.exclude = [/node_modules\/(?!(gatsby)\/)/];
   return new Promise(function (resolve, reject) {
     if (stage === "develop") {
-      (0, _webpack.default)(config).watch({}, function () {});
+      (0, _webpack["default"])(config).watch({}, function () {});
       return resolve();
     }
 
-    return (0, _webpack.default)(config).run(function (err, stats) {
+    return (0, _webpack["default"])(config).run(function (err, stats) {
       if (err) return reject(err);
       var errors = stats.compilation.errors || [];
       if (errors.length > 0) return reject(stats.compilation.errors);
