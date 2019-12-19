@@ -236,7 +236,7 @@ exports.onCreateWebpackConfig = function (_ref4, _ref5) {
       // production.
       minimizer: stage === "develop" ? [] : gatsbyConfig.optimization.minimizer
     },
-    devtool: false,
+    devtool: stage === "develop" ? "cheap-module-source-map" : "source-map",
     externals: externals.map(function (_ref8) {
       var _ref9;
 
