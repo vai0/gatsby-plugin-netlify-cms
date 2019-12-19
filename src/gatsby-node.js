@@ -227,7 +227,6 @@ exports.onCreateWebpackConfig = (
       new webpack.DefinePlugin({
         CMS_MANUAL_INIT: JSON.stringify(manualInit),
         PRODUCTION: JSON.stringify(stage !== `develop`),
-        PRERENDER_NAVBAR: JSON.stringify(false),
       }),
     ].filter(p => p),
 
