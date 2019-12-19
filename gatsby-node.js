@@ -18,6 +18,10 @@ var _miniCssExtractPlugin = _interopRequireDefault(require("mini-css-extract-plu
 
 var _friendlyErrorsWebpackPlugin = _interopRequireDefault(require("@pieh/friendly-errors-webpack-plugin"));
 
+var _copyWebpackPlugin = _interopRequireDefault(require("copy-webpack-plugin"));
+
+var _htmlWebpackTagsPlugin = _interopRequireDefault(require("html-webpack-tags-plugin"));
+
 // TODO: swap back when https://github.com/geowarin/friendly-errors-webpack-plugin/pull/86 lands
 // Deep mapping function for plain objects and arrays. Allows any value,
 // including an object or array, to be transformed.
@@ -55,15 +59,6 @@ function replaceRule(value) {
 
   if (value.type === "javascript/auto" && value.use && value.use[0] && value.use[0].options && value.use[0].options.presets && /babel-preset-gatsby[/\\]dependencies\.js/.test(value.use[0].options.presets)) {
     return null;
-  } // Manually swap `style-loader` for `MiniCssExtractPlugin.loader`.
-  // `style-loader` is only used in development, and doesn't allow us to pass
-  // the `styles` entry css path to Netlify CMS.
-
-
-  if (typeof value.loader === "string" && value.loader.includes("style-loader")) {
-    return (0, _extends2["default"])({}, value, {
-      loader: _miniCssExtractPlugin["default"].loader
-    });
   }
 
   return value;
@@ -105,8 +100,11 @@ exports.onCreateWebpackConfig = function (_ref4, _ref5) {
       getConfig = _ref4.getConfig,
       plugins = _ref4.plugins,
       pathPrefix = _ref4.pathPrefix,
-      loaders = _ref4.loaders;
+      loaders = _ref4.loaders,
+      rules = _ref4.rules,
+      actions = _ref4.actions;
   var modulePath = _ref5.modulePath,
+      customizeWebpackConfig = _ref5.customizeWebpackConfig,
       _ref5$publicPath = _ref5.publicPath,
       publicPath = _ref5$publicPath === void 0 ? "admin" : _ref5$publicPath,
       _ref5$enableIdentityW = _ref5.enableIdentityWidget,
@@ -117,8 +115,8 @@ exports.onCreateWebpackConfig = function (_ref4, _ref5) {
       htmlFavicon = _ref5$htmlFavicon === void 0 ? "" : _ref5$htmlFavicon,
       _ref5$manualInit = _ref5.manualInit,
       manualInit = _ref5$manualInit === void 0 ? false : _ref5$manualInit,
-      _ref5$resolvePaths = _ref5.resolvePaths,
-      resolvePaths = _ref5$resolvePaths === void 0 ? [] : _ref5$resolvePaths;
+      _ref5$includeRobots = _ref5.includeRobots,
+      includeRobots = _ref5$includeRobots === void 0 ? false : _ref5$includeRobots;
 
   if (!["develop", "build-javascript"].includes(stage)) {
     return Promise.resolve();
@@ -130,17 +128,42 @@ exports.onCreateWebpackConfig = function (_ref4, _ref5) {
       program = _store$getState2.program;
 
   var publicPathClean = (0, _lodash.trim)(publicPath, "/");
+  var externals = [{
+    name: "react",
+    global: "React",
+    assetDir: "umd",
+    assetName: "react.production.min.js"
+  }, {
+    name: "react-dom",
+    global: "ReactDOM",
+    assetDir: "umd",
+    assetName: "react-dom.production.min.js"
+  }, {
+    name: "netlify-cms-app",
+    global: "NetlifyCmsApp",
+    assetDir: "dist",
+    assetName: "netlify-cms-app.js",
+    sourceMap: "netlify-cms-app.js.map"
+  }];
+
+  if (enableIdentityWidget) {
+    externals.unshift({
+      name: "netlify-identity-widget",
+      global: "netlifyIdentity",
+      assetDir: "build",
+      assetName: "netlify-identity-widget.js",
+      sourceMap: "netlify-identity-widget.js.map"
+    });
+  }
+
   var config = (0, _extends2["default"])({}, gatsbyConfig, {
     entry: {
-      cms: [manualInit && __dirname + "/cms-manual-init.js", __dirname + "/cms.js", enableIdentityWidget && __dirname + "/cms-identity.js"].concat(modulePath).filter(function (p) {
+      cms: [_path["default"].join(__dirname, "cms.js"), enableIdentityWidget && _path["default"].join(__dirname, "cms-identity.js")].concat(modulePath).filter(function (p) {
         return p;
       })
     },
     output: {
       path: _path["default"].join(program.directory, "public", publicPathClean)
-    },
-    resolve: {
-      modules: [].concat(resolvePaths, ["node_modules"])
     },
     module: {
       rules: deepMap(gatsbyConfig.module.rules, replaceRule).filter(Boolean)
@@ -160,21 +183,48 @@ exports.onCreateWebpackConfig = function (_ref4, _ref5) {
       }
     }), // Use a simple filename with no hash so we can access from source by
     // path.
-    new _miniCssExtractPlugin["default"]({
+    stage !== "develop" && new _miniCssExtractPlugin["default"]({
       filename: "[name].css"
     }), // Auto generate CMS index.html page.
     new _htmlWebpackPlugin["default"]({
       title: htmlTitle,
       favicon: htmlFavicon,
       chunks: ["cms"],
-      excludeAssets: [/cms.css/]
+      excludeAssets: [/cms.css/],
+      meta: {
+        robots: includeRobots ? "all" : "none" // Control whether search engines index this page
+
+      }
     }), // Exclude CSS from index.html, as any imported styles are assumed to be
     // targeting the editor preview pane. Uses `excludeAssets` option from
     // `HtmlWebpackPlugin` config.
     new _htmlWebpackExcludeAssetsPlugin["default"](), // Pass in needed Gatsby config values.
     new _webpack["default"].DefinePlugin({
       __PATH__PREFIX__: pathPrefix,
-      CMS_PUBLIC_PATH: JSON.stringify(publicPath),
+      CMS_PUBLIC_PATH: JSON.stringify(publicPath)
+    }), new _copyWebpackPlugin["default"]([].concat.apply([], externals.map(function (_ref6) {
+      var name = _ref6.name,
+          assetName = _ref6.assetName,
+          sourceMap = _ref6.sourceMap,
+          assetDir = _ref6.assetDir;
+      return [{
+        from: require.resolve(_path["default"].join(name, assetDir, assetName)),
+        to: assetName
+      }, sourceMap && {
+        from: require.resolve(_path["default"].join(name, assetDir, sourceMap)),
+        to: sourceMap
+      }].filter(function (item) {
+        return item;
+      });
+    }))), new _htmlWebpackTagsPlugin["default"]({
+      tags: externals.map(function (_ref7) {
+        var assetName = _ref7.assetName;
+        return assetName;
+      }),
+      append: false
+    }), new _webpack["default"].DefinePlugin({
+      CMS_MANUAL_INIT: JSON.stringify(manualInit),
+      PRODUCTION: JSON.stringify(stage !== "develop"),
       PRERENDER_NAVBAR: JSON.stringify(false)
     })]).filter(function (p) {
       return p;
@@ -187,21 +237,47 @@ exports.onCreateWebpackConfig = function (_ref4, _ref5) {
       // production.
       minimizer: stage === "develop" ? [] : gatsbyConfig.optimization.minimizer
     },
-    devtool: false
+    devtool: false,
+    externals: externals.map(function (_ref8) {
+      var _ref9;
+
+      var name = _ref8.name,
+          global = _ref8.global;
+      return _ref9 = {}, _ref9[name] = global, _ref9;
+    })
   });
-  config.module.rules.push({
-    test: /gatsby\/cache-dir.*\.js$/,
-    loader: require.resolve("babel-loader"),
-    options: {
-      presets: [require.resolve("@babel/preset-react"), [require.resolve("@babel/preset-env"), {
-        shippedProposals: true,
-        useBuiltIns: "entry",
-        corejs: 2
-      }]],
-      plugins: [require.resolve("@babel/plugin-proposal-class-properties"), require.resolve("babel-plugin-remove-graphql-queries")]
-    }
+
+  if (customizeWebpackConfig) {
+    customizeWebpackConfig(config, {
+      store: store,
+      stage: stage,
+      pathPrefix: pathPrefix,
+      getConfig: getConfig,
+      rules: rules,
+      loaders: loaders,
+      plugins: plugins
+    });
+  }
+
+  actions.setWebpackConfig({
+    // force code splitting for netlify-identity-widget
+    optimization: stage === "develop" ? {} : {
+      splitChunks: {
+        cacheGroups: {
+          "netlify-identity-widget": {
+            test: /[\\/]node_modules[\\/](netlify-identity-widget)[\\/]/,
+            name: "netlify-identity-widget",
+            chunks: "all",
+            enforce: true
+          }
+        }
+      }
+    },
+    // ignore netlify-identity-widget when not enabled
+    plugins: enableIdentityWidget ? [] : [new _webpack["default"].IgnorePlugin({
+      resourceRegExp: /^netlify-identity-widget$/
+    })]
   });
-  config.module.rules.exclude = [/node_modules\/(?!(gatsby)\/)/];
   return new Promise(function (resolve, reject) {
     if (stage === "develop") {
       (0, _webpack["default"])(config).watch({}, function () {});
