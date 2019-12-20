@@ -183,7 +183,7 @@ exports.onCreateWebpackConfig = function (_ref4, _ref5) {
       }
     }), // Use a simple filename with no hash so we can access from source by
     // path.
-    stage !== "develop" && new _miniCssExtractPlugin["default"]({
+    new _miniCssExtractPlugin["default"]({
       filename: "[name].css"
     }), // Auto generate CMS index.html page.
     new _htmlWebpackPlugin["default"]({
