@@ -183,7 +183,7 @@ exports.onCreateWebpackConfig = function (_ref4, _ref5) {
       }
     }), // Use a simple filename with no hash so we can access from source by
     // path.
-    new _miniCssExtractPlugin["default"]({
+    stage !== "develop" && new _miniCssExtractPlugin["default"]({
       filename: "[name].css"
     }), // Auto generate CMS index.html page.
     new _htmlWebpackPlugin["default"]({
@@ -216,13 +216,11 @@ exports.onCreateWebpackConfig = function (_ref4, _ref5) {
       }].filter(function (item) {
         return item;
       });
-    }))), new _htmlWebpackTagsPlugin["default"]({
-      tags: externals.map(function (_ref7) {
-        var assetName = _ref7.assetName;
-        return assetName;
-      }),
-      append: false
-    }), new _webpack["default"].DefinePlugin({
+    }))), // new HtmlWebpackTagsPlugin({
+    //   tags: externals.map(({ assetName }) => assetName),
+    //   append: false,
+    // }),
+    new _webpack["default"].DefinePlugin({
       CMS_MANUAL_INIT: JSON.stringify(manualInit),
       PRODUCTION: JSON.stringify(stage !== "develop")
     })]).filter(function (p) {
@@ -237,12 +235,12 @@ exports.onCreateWebpackConfig = function (_ref4, _ref5) {
       minimizer: stage === "develop" ? [] : gatsbyConfig.optimization.minimizer
     },
     devtool: stage === "develop" ? "cheap-module-source-map" : "source-map",
-    externals: externals.map(function (_ref8) {
-      var _ref9;
+    externals: externals.map(function (_ref7) {
+      var _ref8;
 
-      var name = _ref8.name,
-          global = _ref8.global;
-      return _ref9 = {}, _ref9[name] = global, _ref9;
+      var name = _ref7.name,
+          global = _ref7.global;
+      return _ref8 = {}, _ref8[name] = global, _ref8;
     })
   });
 

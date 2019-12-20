@@ -174,9 +174,10 @@ exports.onCreateWebpackConfig = (
 
       // Use a simple filename with no hash so we can access from source by
       // path.
-      new MiniCssExtractPlugin({
-        filename: `[name].css`,
-      }),
+      stage !== `develop` &&
+        new MiniCssExtractPlugin({
+          filename: `[name].css`,
+        }),
 
       // Auto generate CMS index.html page.
       new HtmlWebpackPlugin({
@@ -218,10 +219,10 @@ exports.onCreateWebpackConfig = (
         )
       ),
 
-      new HtmlWebpackTagsPlugin({
-        tags: externals.map(({ assetName }) => assetName),
-        append: false,
-      }),
+      // new HtmlWebpackTagsPlugin({
+      //   tags: externals.map(({ assetName }) => assetName),
+      //   append: false,
+      // }),
 
       new webpack.DefinePlugin({
         CMS_MANUAL_INIT: JSON.stringify(manualInit),
